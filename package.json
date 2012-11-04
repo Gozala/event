@@ -1,0 +1,41 @@
+{
+  "name": "event",
+  "id": "event",
+  "version": "0.0.1",
+  "description": "Functional reactive style events",
+  "keywords": [
+    "event"
+  ],
+  "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
+  "homepage": "https://github.com/Gozala/event",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gozala/event.git",
+    "web": "https://github.com/Gozala/event"
+  },
+  "bugs": {
+    "url": "http://github.com/Gozala/event/issues/"
+  },
+  "devDependencies": {
+    "test": "~0.x.0",
+    "phantomify": "~0.x.0",
+    "repl-utils": "~1.0.0"
+  },
+  "main": "./index.js",
+  "scripts": {
+    "repl": "node node_modules/repl-utils",
+    "test": "npm run test-node && npm run test-browser",
+    "test-browser": "node ./node_modules/phantomify/bin/cmd.js ./test/index.js",
+    "test-node": "node ./test/index.js"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/Gozala/event/License.md"
+    }
+  ],
+  "dependencies": {
+    "method": "~0.1.1",
+    "watchables": "0.0.3"
+  }
+}
