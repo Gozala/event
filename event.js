@@ -120,7 +120,7 @@ send.define(Event, function sendEvent(event, value) {
   }
 })
 
-function event() {
+function event(callback) {
   /**
   Function creates new `Event` that can be `watched` for a new values `send`-ed
   on it. Also `send` function can be used on returned instance to send new
@@ -137,7 +137,13 @@ function event() {
   send(e, 1) // => 1
   send(e, 2) // => 2
   **/
-  return new Event()
+  var ev = new Event()
+
+  callback && callback(function next(data) {
+    send(ev, data)
+  })
+
+  return ev
 }
 event.type = Event
 
