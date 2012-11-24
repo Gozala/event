@@ -29,7 +29,7 @@
     "cache-reduce": "~0.1.1",
     "eventual": "~1.0.0"
   },
-  "main": "./index.js",
+  "main": "./event.js",
   "scripts": {
     "repl": "node node_modules/repl-utils",
     "test": "npm run test-node && npm run test-browser",
