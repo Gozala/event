@@ -1,8 +1,11 @@
 "use strict";
 
 var send = require("./send")
-var watch = require("watchables/watch")
-var unwatch = require("watchables/unwatch")
+var reduce = require("reducible/reduce")
+var isReduced = require("reducible/is-reduced")
+var isError = require("reducible/is-error")
+var reduced = require("reducible/reduced")
+var end = require("reducible/end")
 
 // `Event` is data type representing a stream of values that can be dispatched
 // manually in an imperative style by calling `send(event, value)`
@@ -13,77 +16,20 @@ function Event() {}
 // a future it will be a private names
 // http://wiki.ecmascript.org/doku.php?id=harmony:private_name_objects) so
 // that it's behavior can not be tempered.
-var observers = "watchers@" + module.id
-Object.defineProperty(Event.prototype, observers, {
+var reducer = "watchers@" + module.id
+var state = "state@" + module.id
+var ended = "ended@" + module.id
+Object.defineProperty(Event.prototype, state, {
   value: void(0), enumerable: false, configurable: false, writable: true
 })
-
-// ## Watchable
-//
-// Type implements subset of `Watchable` abstraction to allow registration
-// and un-registration of watchers that would wish to be notified on once
-// new value are dispatched. Type intentionally does not implements `watchers`
-// method so that inconsistent event dispatch could not be emulated.
-
-// ### watch
-//
-// `Event` type implements `watch` as a primary mechanism for subscribing to a
-// new dispatched values of the given instance. `watcher` must be a function.
-watch.define(Event, function watchEvent(event, watcher) {
-  var watchers = event[observers]
-  // Event type optimizes for a case with a single `watcher` case as it's a
-  // most common case.
-  switch (typeof(watchers)) {
-    // If there is no watchers yet `watcher` is stored directly without
-    // creation of an array.
-    case "undefined":
-      event[observers] = watcher
-      return void(0)
-    // If type is a `function` then `event` already has a `watcher`, in such
-    // case array of pre-existing and a new watcher is created, unless
-    // pre-existing watcher is this one (in such case do nothing to avoid
-    // double notifications of a same watcher).
-    case "function":
-      if (watchers !== watcher) event[observers] = [watchers, watcher]
-      return void(0)
-    // Otherwise it's an array and a `watcher` is pushed into it was already
-    // in it.
-    default:
-      if (watchers.indexOf(watcher) < 0) watchers.push(watcher)
-      return void(0)
-  }
+Object.defineProperty(Event.prototype, reducer, {
+  value: void(0), enumerable: false, configurable: false, writable: true
+})
+Object.defineProperty(Event.prototype, ended, {
+  value: false, enumerable: false, configurable: false, writable: true
 })
 
-// ### unwatch
-//
-// `Event` type implements `unwatch` function that can be used to unsubscribe
-// a `watcher` from the new values for the given `event`.
-unwatch.define(Event, function unwatchEvent(event, watcher) {
-  var watchers = event[observers]
-  // Optimize for a case when it's an only `watcher`.
-  if (watchers === watcher) {
-    event[observers] = void(0)
-    return void(0)
-  }
 
-
-  switch (typeof(watchers)) {
-    // If `event` has no `watchers` ignore.
-    case "undefined": return void(0)
-    // If `event` has an only watcher different from given one (it's different
-    // since other case was handled in `if` clause already) ignore.
-    case "function": return void(0)
-    // Otherwise `event` has multiple `watchers`, if given `watcher` is one
-    // of them remove it from the `watchers` array.
-    default:
-      var index = watchers.indexOf(watcher)
-      if (index >= 0) watchers.splice(index, 1)
-      // If only single watcher is left set it as internal `watchers` property
-      // to optimize a dispatch by avoiding slicing arrays and enumerations.
-      if (watchers.length === 1) event[observers] = watchers[0]
-      return void(0)
-  }
-})
 
 // ## send
 //
@@ -95,29 +41,27 @@ unwatch.define(Event, function unwatchEvent(event, watcher) {
 //  otherwise, although this implementation detail is not guaranteed and may
 //  change in a future.
 send.define(Event, function sendEvent(event, value) {
-  var watchers = event[observers]
-  switch (typeof(watchers)) {
-    // If there are no watchers return `false`
-    case "undefined":
-      return false
-    // If event has only `watcher` invoke it and return `true`
-    case "function":
-      watchers(value)
-      return true
-    // Otherwise slice array of watchers (this will guarantee that `unwatch`
-    // and `watch` calls in side effect to the dispatch will not break FIFO
-    // dispatch order) and invoke each one with a value. Return `true` as
-    // result.
-    default:
-      watchers = watchers.slice()
-      var index = 0
-      var count = watchers.length
-      while (index < count) {
-        watchers[index](value)
-        index = index + 1
-      }
-      return true
+  // Event may only be reduced by one consumer function.
+  // Other data types built on top of signal may allow for more consumers.
+  if (event[ended]) return reduced()
+  if (value === end || isError(value)) event[ended] = true
+
+  var next = event[reducer]
+  if (next) {
+    var result = next(value, event[state])
+    if (isReduced(result) || event[ended])
+      event[reducer] = event[state] = void(0)
+    else event[state] = result
   }
+})
+
+reduce.define(Event, function(event, next, initial) {
+  // Event may only be reduced by one consumer function.
+  // Other data types built on top of signal may allow for more consumers.
+  if (event[reducer] || event[ended])
+    return next(Error("Event is already reduced"), initial)
+  event[reducer] = next
+  event[state] = initial
 })
 
 function event() {
@@ -128,14 +72,17 @@ function event() {
 
   ## Example
 
-  var e = event()
+      var e = event()
 
-  send(e, 0)
+      send(e, 0)
 
-  watch(e, consolel.log.bind(console, "=>"))
+      reduce(e, function(index, value) {
+        console.log("=>", index, value)
+        return index + 1
+      }, 0)
 
-  send(e, 1) // => 1
-  send(e, 2) // => 2
+      send(e, "a") // => 0 "a"
+      send(e, "b") // => 0 "b"
   **/
   return new Event()
 }
