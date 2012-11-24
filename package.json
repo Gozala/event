@@ -4,7 +4,11 @@
   "version": "0.1.0",
   "description": "Functional reactive style events",
   "keywords": [
-    "event"
+    "event",
+    "reduce",
+    "reducible",
+    "stream",
+    "signal"
   ],
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
   "homepage": "https://github.com/Gozala/event",
@@ -17,16 +21,21 @@
     "url": "http://github.com/Gozala/event/issues/"
   },
   "devDependencies": {
-    "test": "~0.x.0",
+    "test": "~0.6.0",
     "phantomify": "~0.x.0",
-    "repl-utils": "~1.0.0"
+    "repl-utils": "~2.0.1",
+    "reducers": "~2.0.0",
+    "buffer-reduce": "~0.1.0",
+    "cache-reduce": "~0.1.1",
+    "eventual": "~1.0.0"
   },
   "main": "./index.js",
   "scripts": {
     "repl": "node node_modules/repl-utils",
     "test": "npm run test-node && npm run test-browser",
     "test-browser": "node ./node_modules/phantomify/bin/cmd.js ./test/index.js",
-    "test-node": "node ./test/index.js"
+    "test-node": "node ./test/index.js",
+    "postinstall": "npm dedup"
   },
   "licenses": [
     {
@@ -36,6 +45,6 @@
   ],
   "dependencies": {
     "method": "~1.0.0",
-    "watchables": "0.0.3"
+    "reducible": "~1.0.1"
   }
 }
