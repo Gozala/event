@@ -44,7 +44,9 @@
     }
   ],
   "dependencies": {
-    "method": "~1.0.0",
+    "method": "~1.0.0"
+  },
+  "peerDependencies": {
     "reducible": "~1.0.1"
   }
 }
